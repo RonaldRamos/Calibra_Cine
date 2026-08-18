@@ -1,0 +1,261 @@
+{
+  "entities": {
+    "Cinema": {
+      "title": "Cinema",
+      "description": "Complexo cinematográfico atendido",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "city": { "type": "string" },
+        "state": { "type": "string" },
+        "address": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "notes": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "name", "city", "state", "status", "createdAt"]
+    },
+    "Sala": {
+      "title": "Sala",
+      "description": "Sala de cinema com projeção e áudio",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "cinemaId": { "type": "string" },
+        "cinemaName": { "type": "string" },
+        "number": { "type": "number" },
+        "name": { "type": "string" },
+        "type": { "type": "string" },
+        "status": { "type": "string" },
+        "paralizedReason": { "type": "string" },
+        "paralizedAt": { "type": "string" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "cinemaId", "number", "name", "type", "createdAt"]
+    },
+    "EquipmentModel": {
+      "title": "EquipmentModel",
+      "description": "Modelo de equipamento de cinema",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "category": { "type": "string" },
+        "brand": { "type": "string" },
+        "model": { "type": "string" },
+        "cinemaId": { "type": "string" },
+        "cinemaName": { "type": "string" },
+        "serialNumber": { "type": "string" },
+        "description": { "type": "string" }
+      },
+      "required": ["id", "category", "brand", "model"]
+    },
+    "MaintenanceReport": {
+      "title": "MaintenanceReport",
+      "description": "Ordem de serviço e relatório técnico de manutenção",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "technicianId": { "type": "string" },
+        "technicianName": { "type": "string" },
+        "date": { "type": "string" },
+        "time": { "type": "string" },
+        "cinemaId": { "type": "string" },
+        "cinemaName": { "type": "string" },
+        "salaId": { "type": "string" },
+        "salaName": { "type": "string" },
+        "salaType": { "type": "string" },
+        "maintenanceType": { "type": "string" },
+        "generalDescription": { "type": "string" },
+        "equipmentItems": { "type": "array" },
+        "photos": { "type": "array" },
+        "digitalSignature": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "technicianId", "cinemaId", "salaId", "status", "createdAt"]
+    },
+    "User": {
+      "title": "User",
+      "description": "Usuários e técnicos do sistema",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string" },
+        "password": { "type": "string" },
+        "phone": { "type": "string" },
+        "avatar": { "type": "string" },
+        "specialty": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "name", "email", "role", "status", "createdAt"]
+    },
+    "ActivityLog": {
+      "title": "ActivityLog",
+      "description": "Log de auditoria e atividades",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userRole": { "type": "string" },
+        "action": { "type": "string" },
+        "details": { "type": "string" },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["id", "userId", "userName", "userRole", "action", "details", "timestamp"]
+    },
+    "CompanyConfig": {
+      "title": "CompanyConfig",
+      "description": "Configurações gerais da empresa",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "cnpj": { "type": "string" },
+        "logoUrl": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "address": { "type": "string" },
+        "theme": { "type": "string" },
+        "language": { "type": "string" },
+        "backupAuto": { "type": "boolean" },
+        "smtp": { "type": "object" }
+      }
+    },
+    "TechnicalDemand": {
+      "title": "TechnicalDemand",
+      "description": "Demandas e chamados técnicos",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "cinemaId": { "type": "string" },
+        "cinemaName": { "type": "string" },
+        "salaName": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "dueDate": { "type": "string" },
+        "status": { "type": "string" },
+        "priority": { "type": "string" },
+        "observations": { "type": "string" },
+        "observationHistory": { "type": "array" },
+        "createdById": { "type": "string" },
+        "createdByName": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "completedAt": { "type": "string" }
+      },
+      "required": ["id", "cinemaId", "salaName", "title", "dueDate", "status", "createdAt"]
+    },
+    "EquipmentMovement": {
+      "title": "EquipmentMovement",
+      "description": "Movimentações de equipamentos entre cinemas (empréstimos, transferências permanentes e trocas)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "equipmentDescription": { "type": "string" },
+        "equipmentCategory": { "type": "string" },
+        "equipmentSerial": { "type": "string" },
+        "equipmentModel": { "type": "string" },
+        "sourceCinemaId": { "type": "string" },
+        "sourceCinemaName": { "type": "string" },
+        "sourceSalaName": { "type": "string" },
+        "destinationCinemaId": { "type": "string" },
+        "destinationCinemaName": { "type": "string" },
+        "destinationSalaName": { "type": "string" },
+        "type": { "type": "string" },
+        "status": { "type": "string" },
+        "date": { "type": "string" },
+        "expectedReturnDate": { "type": "string" },
+        "reason": { "type": "string" },
+        "notes": { "type": "string" },
+        "completedAt": { "type": "string" },
+        "completedNotes": { "type": "string" },
+        "completedById": { "type": "string" },
+        "completedByName": { "type": "string" },
+        "createdById": { "type": "string" },
+        "createdByName": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "equipmentDescription", "sourceCinemaId", "destinationCinemaId", "type", "status", "date", "createdAt"]
+    },
+    "InventoryItem": {
+      "title": "InventoryItem",
+      "description": "Itens, peças e equipamentos em estoque por cinema ou geral",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "cinemaId": { "type": "string" },
+        "cinemaName": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "brand": { "type": "string" },
+        "model": { "type": "string" },
+        "serialNumber": { "type": "string" },
+        "partNumber": { "type": "string" },
+        "location": { "type": "string" },
+        "quantity": { "type": "number" },
+        "minQuantity": { "type": "number" },
+        "unit": { "type": "string" },
+        "status": { "type": "string" },
+        "unitCost": { "type": "number" },
+        "notes": { "type": "string" },
+        "lastRestockDate": { "type": "string" },
+        "createdById": { "type": "string" },
+        "createdByName": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "cinemaId", "name", "quantity", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "cinemas": {
+      "entity": "Cinema",
+      "description": "Coleção de cinemas cadastrados"
+    },
+    "salas": {
+      "entity": "Sala",
+      "description": "Coleção de salas de cinema cadastradas"
+    },
+    "equipment_models": {
+      "entity": "EquipmentModel",
+      "description": "Coleção de modelos de equipamentos"
+    },
+    "maintenance_reports": {
+      "entity": "MaintenanceReport",
+      "description": "Coleção de relatórios de manutenção"
+    },
+    "users": {
+      "entity": "User",
+      "description": "Coleção de técnicos e administradores"
+    },
+    "activity_logs": {
+      "entity": "ActivityLog",
+      "description": "Coleção de logs de atividades"
+    },
+    "app_settings": {
+      "entity": "CompanyConfig",
+      "description": "Configurações globais da empresa"
+    },
+    "demands": {
+      "entity": "TechnicalDemand",
+      "description": "Coleção de demandas técnicas e chamados"
+    },
+    "movements": {
+      "entity": "EquipmentMovement",
+      "description": "Coleção de movimentações de equipamentos entre cinemas"
+    },
+    "inventory": {
+      "entity": "InventoryItem",
+      "description": "Coleção de estoque de equipamentos e peças por cinema"
+    }
+  }
+}

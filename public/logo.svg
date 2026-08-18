@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <defs>
+    <!-- Background Dark Radial Gradient -->
+    <radialGradient id="bgGrad" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </radialGradient>
+
+    <!-- Silver Metal Gradient -->
+    <linearGradient id="silverGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="25%" stop-color="#cbd5e1"/>
+      <stop offset="50%" stop-color="#94a3b8"/>
+      <stop offset="75%" stop-color="#e2e8f0"/>
+      <stop offset="100%" stop-color="#64748b"/>
+    </linearGradient>
+
+    <linearGradient id="silverInner" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#475569"/>
+      <stop offset="50%" stop-color="#94a3b8"/>
+      <stop offset="100%" stop-color="#f8fafc"/>
+    </linearGradient>
+
+    <!-- Golden Beam Gradient -->
+    <linearGradient id="goldBeam" x1="0%" y1="50%" x2="100%" y2="50%">
+      <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.95"/>
+      <stop offset="50%" stop-color="#f59e0b" stop-opacity="0.75"/>
+      <stop offset="100%" stop-color="#d97706" stop-opacity="0"/>
+    </linearGradient>
+
+    <linearGradient id="goldText" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="40%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#b45309"/>
+    </linearGradient>
+
+    <!-- Lens Glass Gradient -->
+    <radialGradient id="lensGlass" cx="40%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#60a5fa"/>
+      <stop offset="35%" stop-color="#2563eb"/>
+      <stop offset="70%" stop-color="#1e1b4b"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </radialGradient>
+
+    <!-- Drop Shadow for 3D depth -->
+    <filter id="dropShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+
+    <filter id="beamGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Dark Canvas Background -->
+  <rect width="500" height="500" rx="40" fill="url(#bgGrad)"/>
+
+  <g filter="url(#dropShadow)">
+    <!-- Golden Projection Light Beam -->
+    <polygon points="275,185 430,120 430,250 275,185" fill="url(#goldBeam)" filter="url(#beamGlow)" />
+    <polygon points="275,185 410,135 410,235 275,185" fill="#fef08a" opacity="0.3" />
+
+    <!-- C-Shaped Camera Aperture / Film Reel Outer Arc -->
+    <!-- Outer arc from ~30deg to ~330deg -->
+    <path d="
+      M 285,140
+      A 110,110 0 1,0 285,230
+      L 245,215
+      A 70,70 0 1,1 245,155
+      Z" 
+      fill="url(#silverGrad)" 
+      stroke="#ffffff" 
+      stroke-width="1.5" />
+
+    <!-- Sprocket Holes on Left Curve of C -->
+    <rect x="192" y="142" width="10" height="12" rx="2" fill="#0f172a" />
+    <rect x="182" y="162" width="10" height="12" rx="2" fill="#0f172a" />
+    <rect x="180" y="184" width="10" height="12" rx="2" fill="#0f172a" />
+    <rect x="182" y="206" width="10" height="12" rx="2" fill="#0f172a" />
+    <rect x="192" y="226" width="10" height="12" rx="2" fill="#0f172a" />
+
+    <!-- Inner Lens Ring & Glass Aperture -->
+    <circle cx="225" cy="185" r="58" fill="url(#silverInner)" stroke="#cbd5e1" stroke-width="2" />
+    <circle cx="225" cy="185" r="48" fill="#020617" />
+    <circle cx="225" cy="185" r="42" fill="url(#lensGlass)" stroke="#3b82f6" stroke-width="1.5" />
+    
+    <!-- Lens Reflection Rings -->
+    <circle cx="225" cy="185" r="28" fill="none" stroke="#93c5fd" stroke-width="1" opacity="0.6" />
+    <circle cx="225" cy="185" r="16" fill="none" stroke="#bfdbfe" stroke-width="1.5" opacity="0.8" />
+    <circle cx="220" cy="180" r="6" fill="#ffffff" opacity="0.85" />
+
+    <!-- Logo Typography: CalibraCine -->
+    <text x="250" y="340" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="54" letter-spacing="-1">
+      <tspan fill="url(#silverGrad)">Calibra</tspan>
+      <tspan fill="url(#goldText)">Cine</tspan>
+    </text>
+
+    <!-- Tagline Divider & Text -->
+    <line x1="80" y1="375" x2="135" y2="375" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" />
+    <text x="250" y="379" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="11" fill="#cbd5e1" letter-spacing="3">
+      MANUTENÇÃO QUE MANTÉM A PERFEIÇÃO
+    </text>
+    <line x1="365" y1="375" x2="420" y2="375" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" />
+  </g>
+</svg>

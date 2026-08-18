@@ -1,0 +1,6 @@
+{
+  "name": "CalibraCine",
+  "description": "Sistema de gestão técnica de cinema digital com sincronização em tempo real na nuvem via Firebase Firestore desenvolvido por Ronald Ramos (v2.3)",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
