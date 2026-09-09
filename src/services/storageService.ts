@@ -38,6 +38,7 @@ import {
   SEED_MOVEMENTS,
   SEED_INVENTORY,
 } from '../data/seed';
+import { ensureReportFitsFirestore } from '../utils/imageOptimizer';
 
 const STORAGE_KEYS = {
   CURRENT_USER: 'cmm_current_user',
@@ -81,25 +82,49 @@ export function subscribeToStorageUpdates(callback: (type?: string) => void): ()
 let isFirestoreInitialized = false;
 const unsubscribers: Unsubscribe[] = [];
 
+// Safe Firestore Report Synchronizer (protects against >1MB size and network hiccups)
+export async function safeSyncReportToFirestore(report: MaintenanceReport): Promise<void> {
+  try {
+    const firestoreSafeReport = await ensureReportFitsFirestore(report);
+    await setDoc(
+      doc(db, 'maintenance_reports', firestoreSafeReport.id),
+      cleanForFirestore(firestoreSafeReport),
+      { merge: true }
+    );
+  } catch (err) {
+    console.warn(`Firestore sync error for report ${report.id}:`, err);
+  }
+}
+
 // Initialize Firestore real-time listeners for all collections
 export function initFirestoreSync(): void {
   if (isFirestoreInitialized || typeof window === 'undefined') return;
   isFirestoreInitialized = true;
 
   try {
-    // 1. Cinemas listener
+    // 1. Cinemas listener (Safe Merge)
     const unsubCinemas = onSnapshot(
       collection(db, 'cinemas'),
       (snapshot) => {
         if (snapshot.empty) {
-          // Auto-seed Firestore from local seed if empty
           const seed = getCinemas();
           seed.forEach((item) => {
             setDoc(doc(db, 'cinemas', item.id), cleanForFirestore(item)).catch(console.error);
           });
         } else {
-          const list: Cinema[] = [];
-          snapshot.forEach((d) => list.push(d.data() as Cinema));
+          const cloudMap = new Map<string, Cinema>();
+          snapshot.forEach((d) => {
+            const item = d.data() as Cinema;
+            if (item?.id) cloudMap.set(item.id, item);
+          });
+          const localList = getCinemas();
+          localList.forEach((localItem) => {
+            if (!cloudMap.has(localItem.id)) {
+              cloudMap.set(localItem.id, localItem);
+              setDoc(doc(db, 'cinemas', localItem.id), cleanForFirestore(localItem), { merge: true }).catch(console.error);
+            }
+          });
+          const list = Array.from(cloudMap.values());
           localStorage.setItem(STORAGE_KEYS.CINEMAS, JSON.stringify(list));
           notifyDataChanged('cinemas');
         }
@@ -108,7 +133,7 @@ export function initFirestoreSync(): void {
     );
     unsubscribers.push(unsubCinemas);
 
-    // 2. Salas listener
+    // 2. Salas listener (Safe Merge)
     const unsubSalas = onSnapshot(
       collection(db, 'salas'),
       (snapshot) => {
@@ -118,9 +143,19 @@ export function initFirestoreSync(): void {
             setDoc(doc(db, 'salas', item.id), cleanForFirestore(item)).catch(console.error);
           });
         } else {
-          const list: Sala[] = [];
-          snapshot.forEach((d) => list.push(d.data() as Sala));
-          // Sort by cinema and number
+          const cloudMap = new Map<string, Sala>();
+          snapshot.forEach((d) => {
+            const item = d.data() as Sala;
+            if (item?.id) cloudMap.set(item.id, item);
+          });
+          const localList = getSalas();
+          localList.forEach((localItem) => {
+            if (!cloudMap.has(localItem.id)) {
+              cloudMap.set(localItem.id, localItem);
+              setDoc(doc(db, 'salas', localItem.id), cleanForFirestore(localItem), { merge: true }).catch(console.error);
+            }
+          });
+          const list = Array.from(cloudMap.values());
           list.sort((a, b) => a.number - b.number);
           localStorage.setItem(STORAGE_KEYS.SALAS, JSON.stringify(list));
           notifyDataChanged('salas');
@@ -130,7 +165,7 @@ export function initFirestoreSync(): void {
     );
     unsubscribers.push(unsubSalas);
 
-    // 3. Equipment Models listener
+    // 3. Equipment Models listener (Safe Merge)
     const unsubModels = onSnapshot(
       collection(db, 'equipment_models'),
       (snapshot) => {
@@ -140,8 +175,19 @@ export function initFirestoreSync(): void {
             setDoc(doc(db, 'equipment_models', item.id), cleanForFirestore(item)).catch(console.error);
           });
         } else {
-          const list: EquipmentModel[] = [];
-          snapshot.forEach((d) => list.push(d.data() as EquipmentModel));
+          const cloudMap = new Map<string, EquipmentModel>();
+          snapshot.forEach((d) => {
+            const item = d.data() as EquipmentModel;
+            if (item?.id) cloudMap.set(item.id, item);
+          });
+          const localList = getEquipmentModels();
+          localList.forEach((localItem) => {
+            if (!cloudMap.has(localItem.id)) {
+              cloudMap.set(localItem.id, localItem);
+              setDoc(doc(db, 'equipment_models', localItem.id), cleanForFirestore(localItem), { merge: true }).catch(console.error);
+            }
+          });
+          const list = Array.from(cloudMap.values());
           localStorage.setItem(STORAGE_KEYS.MODELS, JSON.stringify(list));
           notifyDataChanged('equipment_models');
         }
@@ -150,23 +196,47 @@ export function initFirestoreSync(): void {
     );
     unsubscribers.push(unsubModels);
 
-    // 4. Maintenance Reports listener
+    // 4. Maintenance Reports listener (Resilient Non-Destructive Merger)
     const unsubReports = onSnapshot(
       collection(db, 'maintenance_reports'),
       (snapshot) => {
-        if (snapshot.empty) {
-          const seed = getReports();
-          seed.forEach((item) => {
-            setDoc(doc(db, 'maintenance_reports', item.id), cleanForFirestore(item)).catch(console.error);
+        const firestoreMap = new Map<string, MaintenanceReport>();
+        snapshot.forEach((d) => {
+          const item = d.data() as MaintenanceReport;
+          if (item?.id) {
+            firestoreMap.set(item.id, item);
+          }
+        });
+
+        const currentLocal = getReports();
+
+        if (snapshot.empty && currentLocal.length > 0) {
+          currentLocal.forEach((item) => {
+            safeSyncReportToFirestore(item);
           });
-        } else {
-          const list: MaintenanceReport[] = [];
-          snapshot.forEach((d) => list.push(d.data() as MaintenanceReport));
-          // Sort newest first
-          list.sort((a, b) => new Date(b.createdAt || b.date).getTime() - new Date(a.createdAt || a.date).getTime());
-          localStorage.setItem(STORAGE_KEYS.REPORTS, JSON.stringify(list));
-          notifyDataChanged('reports');
+          return;
         }
+
+        // Non-destructive merge: keep any local report that is not in Firestore snapshot
+        const mergedMap = new Map<string, MaintenanceReport>();
+
+        // 1. Add all from Firestore
+        firestoreMap.forEach((rep, id) => {
+          mergedMap.set(id, rep);
+        });
+
+        // 2. Keep and auto-sync any local report that hasn't made it to Firestore
+        currentLocal.forEach((localRep) => {
+          if (!mergedMap.has(localRep.id)) {
+            mergedMap.set(localRep.id, localRep);
+            safeSyncReportToFirestore(localRep);
+          }
+        });
+
+        const list = Array.from(mergedMap.values());
+        list.sort((a, b) => new Date(b.createdAt || b.date).getTime() - new Date(a.createdAt || a.date).getTime());
+        localStorage.setItem(STORAGE_KEYS.REPORTS, JSON.stringify(list));
+        notifyDataChanged('reports');
       },
       (err) => console.warn('Firestore reports sync warning:', err)
     );
@@ -182,8 +252,19 @@ export function initFirestoreSync(): void {
             setDoc(doc(db, 'users', item.id), cleanForFirestore(item)).catch(console.error);
           });
         } else {
-          const list: User[] = [];
-          snapshot.forEach((d) => list.push(d.data() as User));
+          const cloudMap = new Map<string, User>();
+          snapshot.forEach((d) => {
+            const item = d.data() as User;
+            if (item?.id) cloudMap.set(item.id, item);
+          });
+          const localList = getUsers();
+          localList.forEach((localItem) => {
+            if (!cloudMap.has(localItem.id)) {
+              cloudMap.set(localItem.id, localItem);
+              setDoc(doc(db, 'users', localItem.id), cleanForFirestore(localItem), { merge: true }).catch(console.error);
+            }
+          });
+          const list = Array.from(cloudMap.values());
           localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(list));
           notifyDataChanged('users');
         }
@@ -230,7 +311,7 @@ export function initFirestoreSync(): void {
     );
     unsubscribers.push(unsubSettings);
 
-    // 8. Technical Demands listener
+    // 8. Technical Demands listener (Safe Merge)
     const unsubDemands = onSnapshot(
       collection(db, 'demands'),
       (snapshot) => {
@@ -240,9 +321,19 @@ export function initFirestoreSync(): void {
             setDoc(doc(db, 'demands', item.id), cleanForFirestore(item)).catch(console.error);
           });
         } else {
-          const list: TechnicalDemand[] = [];
-          snapshot.forEach((d) => list.push(d.data() as TechnicalDemand));
-          // Sort newest or by due date
+          const cloudMap = new Map<string, TechnicalDemand>();
+          snapshot.forEach((d) => {
+            const item = d.data() as TechnicalDemand;
+            if (item?.id) cloudMap.set(item.id, item);
+          });
+          const localList = getTechnicalDemands();
+          localList.forEach((localItem) => {
+            if (!cloudMap.has(localItem.id)) {
+              cloudMap.set(localItem.id, localItem);
+              setDoc(doc(db, 'demands', localItem.id), cleanForFirestore(localItem), { merge: true }).catch(console.error);
+            }
+          });
+          const list = Array.from(cloudMap.values());
           list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
           localStorage.setItem(STORAGE_KEYS.DEMANDS, JSON.stringify(list));
           notifyDataChanged('demands');
@@ -252,7 +343,7 @@ export function initFirestoreSync(): void {
     );
     unsubscribers.push(unsubDemands);
 
-    // 9. Equipment Movements listener
+    // 9. Equipment Movements listener (Safe Merge)
     const unsubMovements = onSnapshot(
       collection(db, 'movements'),
       (snapshot) => {
@@ -262,8 +353,19 @@ export function initFirestoreSync(): void {
             setDoc(doc(db, 'movements', item.id), cleanForFirestore(item)).catch(console.error);
           });
         } else {
-          const list: EquipmentMovement[] = [];
-          snapshot.forEach((d) => list.push(d.data() as EquipmentMovement));
+          const cloudMap = new Map<string, EquipmentMovement>();
+          snapshot.forEach((d) => {
+            const item = d.data() as EquipmentMovement;
+            if (item?.id) cloudMap.set(item.id, item);
+          });
+          const localList = getMovements();
+          localList.forEach((localItem) => {
+            if (!cloudMap.has(localItem.id)) {
+              cloudMap.set(localItem.id, localItem);
+              setDoc(doc(db, 'movements', localItem.id), cleanForFirestore(localItem), { merge: true }).catch(console.error);
+            }
+          });
+          const list = Array.from(cloudMap.values());
           list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
           localStorage.setItem(STORAGE_KEYS.MOVEMENTS, JSON.stringify(list));
           notifyDataChanged('movements');
@@ -273,7 +375,7 @@ export function initFirestoreSync(): void {
     );
     unsubscribers.push(unsubMovements);
 
-    // 10. Inventory Items listener
+    // 10. Inventory Items listener (Safe Merge)
     const unsubInventory = onSnapshot(
       collection(db, 'inventory'),
       (snapshot) => {
@@ -283,8 +385,19 @@ export function initFirestoreSync(): void {
             setDoc(doc(db, 'inventory', item.id), cleanForFirestore(item)).catch(console.error);
           });
         } else {
-          const list: InventoryItem[] = [];
-          snapshot.forEach((d) => list.push(d.data() as InventoryItem));
+          const cloudMap = new Map<string, InventoryItem>();
+          snapshot.forEach((d) => {
+            const item = d.data() as InventoryItem;
+            if (item?.id) cloudMap.set(item.id, item);
+          });
+          const localList = getInventory();
+          localList.forEach((localItem) => {
+            if (!cloudMap.has(localItem.id)) {
+              cloudMap.set(localItem.id, localItem);
+              setDoc(doc(db, 'inventory', localItem.id), cleanForFirestore(localItem), { merge: true }).catch(console.error);
+            }
+          });
+          const list = Array.from(cloudMap.values());
           list.sort((a, b) => a.name.localeCompare(b.name));
           localStorage.setItem(STORAGE_KEYS.INVENTORY, JSON.stringify(list));
           notifyDataChanged('inventory');
@@ -339,6 +452,24 @@ export function initStorage(): void {
 
   if (!localStorage.getItem(STORAGE_KEYS.REPORTS)) {
     localStorage.setItem(STORAGE_KEYS.REPORTS, JSON.stringify(SEED_REPORTS));
+  } else {
+    try {
+      const rawReports = localStorage.getItem(STORAGE_KEYS.REPORTS);
+      if (rawReports) {
+        const currentReports: MaintenanceReport[] = JSON.parse(rawReports);
+        const has9988 = currentReports.some((r) => r.id === 'CMM-2026-9988');
+        if (!has9988) {
+          const report9988 = SEED_REPORTS.find((r) => r.id === 'CMM-2026-9988');
+          if (report9988) {
+            currentReports.unshift(report9988);
+            localStorage.setItem(STORAGE_KEYS.REPORTS, JSON.stringify(currentReports));
+            safeSyncReportToFirestore(report9988);
+          }
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
   }
 
   if (!localStorage.getItem(STORAGE_KEYS.LOGS)) {
@@ -572,8 +703,8 @@ export function saveReport(report: MaintenanceReport): MaintenanceReport {
   }
   localStorage.setItem(STORAGE_KEYS.REPORTS, JSON.stringify(reports));
 
-  // Sync with Firestore Cloud DB
-  setDoc(doc(db, 'maintenance_reports', updatedReport.id), cleanForFirestore(updatedReport), { merge: true }).catch(console.error);
+  // Sync with Firestore Cloud DB safely with image optimization
+  safeSyncReportToFirestore(updatedReport);
   notifyDataChanged('reports');
   return updatedReport;
 }

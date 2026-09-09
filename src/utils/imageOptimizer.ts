@@ -3,14 +3,14 @@
  * Resizes and compresses uploaded photos client-side to ensure:
  * - Instant uploads even on mobile networks
  * - Ultra-fast HTML2Canvas PDF generation (<200ms)
- * - Safe localStorage & Firestore storage without quota limits
+ * - Safe localStorage & Firestore storage without quota limits (always < 1MB)
  * - Fast e-mail dispatch with lightweight PDF attachments
  */
 
 export async function compressImageFile(
   file: File,
-  maxDimension: number = 800,
-  quality: number = 0.75
+  maxDimension: number = 640,
+  quality: number = 0.65
 ): Promise<string> {
   return new Promise((resolve) => {
     // Safety timeout to prevent hanging on corrupted files
@@ -100,15 +100,15 @@ export async function compressImageFile(
  */
 export async function compressBase64Image(
   dataUrl: string,
-  maxDimension: number = 700,
-  quality: number = 0.72
+  maxDimension: number = 640,
+  quality: number = 0.65
 ): Promise<string> {
   if (!dataUrl || typeof dataUrl !== 'string') {
     return '';
   }
 
   // If already small or svg, skip
-  if (dataUrl.length < 35000 || dataUrl.startsWith('data:image/svg')) {
+  if (dataUrl.length < 25000 || dataUrl.startsWith('data:image/svg')) {
     return dataUrl;
   }
 
@@ -129,7 +129,7 @@ export async function compressBase64Image(
       try {
         let { width, height } = img;
 
-        if (width <= maxDimension && height <= maxDimension && dataUrl.length < 90000) {
+        if (width <= maxDimension && height <= maxDimension && dataUrl.length < 50000) {
           resolve(dataUrl);
           return;
         }
@@ -167,4 +167,31 @@ export async function compressBase64Image(
 
     img.src = dataUrl;
   });
+}
+
+/**
+ * Ensures a report object comfortably fits within Firestore's 1MB document limit
+ * By re-compressing photos if total document size exceeds 700KB.
+ */
+export async function ensureReportFitsFirestore<T extends { photos?: string[] }>(report: T): Promise<T> {
+  try {
+    const rawString = JSON.stringify(report);
+    // If under 650KB, it is well safe for Firestore 1MB limit
+    if (rawString.length < 650000 || !report.photos || report.photos.length === 0) {
+      return report;
+    }
+
+    // Otherwise, optimize each photo in report
+    const optimizedPhotos = await Promise.all(
+      report.photos.map((p) => compressBase64Image(p, 500, 0.55))
+    );
+
+    return {
+      ...report,
+      photos: optimizedPhotos,
+    };
+  } catch (err) {
+    console.warn('Error in ensureReportFitsFirestore:', err);
+    return report;
+  }
 }

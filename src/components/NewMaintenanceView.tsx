@@ -373,9 +373,9 @@ export const NewMaintenanceView: React.FC<NewMaintenanceViewProps> = ({
     setIsCompressingPhotos(true);
 
     try {
-      // Compress all images in parallel to lightweight web format
+      // Compress all images in parallel to lightweight web format (safe for Firestore <1MB)
       const compressedList = await Promise.all(
-        fileArray.map((file) => compressImageFile(file, 1024, 0.78))
+        fileArray.map((file) => compressImageFile(file, 640, 0.65))
       );
       setPhotos((prev) => [...prev, ...compressedList]);
     } catch (err) {
